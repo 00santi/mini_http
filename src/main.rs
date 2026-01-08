@@ -48,7 +48,7 @@ mod get {
 
     pub fn handle_get(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         match req.uri().path() {
-            "/" | "health" => super::health_ok(req),
+            "/" | "/health" => super::health_ok(req),
             "/echo" => get_echo(req),
             _ => translator::get_try_app(req),
         }
@@ -81,11 +81,12 @@ mod get {
 mod post {
     use std::convert::Infallible;
     use hyper::{Body, Request, Response};
+    use super::translator;
 
     pub async fn handle_post(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         match req.uri().path() {
             "/echo_body" => echo_body(req).await,
-            _ => super::handle_404(req)
+            _ => translator::try_app(req).await,
         }
     }
 

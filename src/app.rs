@@ -1,3 +1,5 @@
+use serde::Deserialize;
+
 pub struct AppRequest {
     pub method: Method,
     pub path: String,
@@ -25,8 +27,27 @@ pub enum StatusCode {
 
 
 pub fn router(req: AppRequest) -> AppResponse {
+    match req.method {
+        Method::GET => {
+            route_get(req)
+        },
+        Method::POST => {
+            route_post(req)
+        },
+        _ => handle_404(),
+    }
+}
+
+pub fn route_get(req: AppRequest) -> AppResponse {
     match req.path.as_str() {
+        "/" | "/health" => health_ok(),
         "/time" => time(req),
+        _ => handle_404(),
+    }
+}
+
+pub fn route_post(req: AppRequest) -> AppResponse {
+    match req.path.as_str() {
         "/sum" => sum(req),
         _ => handle_404(),
     }
@@ -56,6 +77,24 @@ fn time(req: AppRequest) -> AppResponse {
     }
 }
 
+#[derive(Deserialize)]
+struct SumInput {
+    a: i32,
+    b: i32,
+}
+
 fn sum(req: AppRequest) -> AppResponse {
-    todo!();
+    let Some(json) = req.body else {
+        return handle_404()
+    };
+
+    let Ok(parsed): Result<SumInput, _> = serde_json::from_str(&json) else {
+        return handle_404()
+    };
+
+    AppResponse {
+        code: StatusCode::OK,
+        headers: vec![],
+        body: Some(format!("Sum = {}", parsed.a + parsed.b)),
+    }
 }

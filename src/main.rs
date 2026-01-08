@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 use hyper::{Body, Method, Request, Response, Server};
-use hyper::service::{make_service_fn, service_fn};
+use hyper::service::{ make_service_fn, service_fn };
 use std::convert::Infallible;
+mod translator;
 mod app;
 
 #[tokio::main]
@@ -43,14 +44,13 @@ fn health_ok(_: Request<Body>) -> Result<Response<Body>, Infallible> {
 mod get {
     use std::convert::Infallible;
     use hyper::{Body, Request, Response};
-    use crate::{handle_404, health_ok};
+    use super::translator;
 
     pub fn handle_get(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         match req.uri().path() {
-            "/" => health_ok(req),
-            "/health" => health_ok(req),
+            "/" | "health" => super::health_ok(req),
             "/echo" => get_echo(req),
-            _ => handle_404(req)
+            _ => translator::get_try_app(req),
         }
     }
 
@@ -81,12 +81,11 @@ mod get {
 mod post {
     use std::convert::Infallible;
     use hyper::{Body, Request, Response};
-    use crate::handle_404;
 
     pub async fn handle_post(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         match req.uri().path() {
             "/echo_body" => echo_body(req).await,
-            _ => handle_404(req)
+            _ => super::handle_404(req)
         }
     }
 

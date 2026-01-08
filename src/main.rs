@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 use hyper::{Body, Method, Request, Response, Server};
 use hyper::service::{make_service_fn, service_fn};
 use std::convert::Infallible;
+mod app;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {

@@ -95,3 +95,41 @@ mod post {
         Ok(Response::new(result))
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::{Request, Body};
+
+    #[tokio::test]
+    async fn sum() {
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sum")
+            .body(Body::from(r#"{"a":10,"b":20}"#))
+            .unwrap();
+
+        let res = router(req).await.unwrap();
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert_eq!(body, "Sum = 30");
+    }
+
+    #[tokio::test]
+    async fn health() {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = router(req).await.unwrap();
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert_eq!(body, "ok!");
+    }
+}

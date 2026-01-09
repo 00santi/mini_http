@@ -98,3 +98,60 @@ fn sum(req: AppRequest) -> AppResponse {
         body: Some(format!("Sum = {}", parsed.a + parsed.b)),
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn req_helper(method: Method, path: &str, body: Option<&str>) -> AppRequest {
+        AppRequest {
+            method,
+            path: path.to_string(),
+            headers: vec![],
+            body: body.map(|s| s.to_string()),
+        }
+    }
+
+    #[test]
+    fn health() {
+        let req = req_helper(Method::GET, "/health", None);
+        let res = router(req);
+
+        assert!(matches!(res.code, StatusCode::OK));
+        assert_eq!(res.body.unwrap_or_default(), "ok!");
+    }
+
+    #[test]
+    fn sum() {
+        let req = req_helper(
+            Method::POST,
+            "/sum",
+            Some(r#"{"a":5,"b":7}"#),
+        );
+
+        let res = router(req);
+
+        assert!(matches!(res.code, StatusCode::OK));
+        assert_eq!(res.body.unwrap_or_default(), "Sum = 12");
+    }
+
+    #[test]
+    fn sum_fail() {
+        let req = req_helper(Method::POST, "/sum", Some("invalid json {}"));
+        let res = router(req);
+
+        assert_eq!(res.body.unwrap_or_default(), "404!");
+        assert!(matches!(res.code, StatusCode::NOTFOUND));
+    }
+
+    #[test]
+    fn invalid_route() {
+        let req = req_helper(Method::GET, "/invalid", None);
+        let res = router(req);
+
+        assert_eq!(res.body.unwrap_or_default(), "404!");
+        assert!(matches!(res.code, StatusCode::NOTFOUND));
+    }
+}

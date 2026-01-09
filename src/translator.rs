@@ -105,3 +105,76 @@ fn app_to_res(res: Result<app::AppResponse, TranslatorError>) -> Response<Body> 
     let body = Body::from(res.body.unwrap_or_default());
     builder.body(body).unwrap()
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::{Request, Body};
+
+    #[tokio::test]
+    async fn sum() {
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sum")
+            .header("content-type", "application/json")
+            .body(Body::from(r#"{"a":3,"b":4}"#))
+            .unwrap();
+
+        let res = try_app(req).await.unwrap();
+
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert_eq!(body, "Sum = 7");
+    }
+
+    #[tokio::test]
+    async fn health() {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = get_try_app(req).unwrap();
+
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert_eq!(body, "ok!");
+    }
+
+    #[tokio::test]
+    async fn invalid_route() {
+        let req = Request::builder()
+            .method("GET")
+            .uri("/invalid")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = get_try_app(req).unwrap();
+
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert_eq!(body, "404!");
+    }
+
+    #[tokio::test]
+    async fn invalid_json() {
+        let req = Request::builder()
+            .method("POST")
+            .uri("/sum")
+            .body(Body::from("whatever"))
+            .unwrap();
+
+        let res = try_app(req).await.unwrap();
+
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+
+        assert_eq!(body, "404!");
+    }
+}

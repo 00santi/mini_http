@@ -32,11 +32,11 @@ async fn router(req: Request<Body>) -> Result<Response<Body>, Infallible> {
 }
 
 fn handle_404(_: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(Response::new(Body::from("404!")))
+    Ok(Response::new(Body::from("404!\n")))
 }
 
 fn health_ok(_: Request<Body>) -> Result<Response<Body>, Infallible> {
-    Ok(Response::new(Body::from("ok!")))
+    Ok(Response::new(Body::from("ok!\n")))
 }
 
 

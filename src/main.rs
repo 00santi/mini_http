@@ -8,7 +8,7 @@ mod app;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!("Start of async server");
-    let addr = SocketAddr::from(([127, 0, 0, 1], 7878));
+    let addr = SocketAddr::from(([0, 0, 0, 0], 7878));
     println!("Opened a socket.  Ip: {}.  Port: {}", addr.ip(), addr.port());
 
     let make_service = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(router)) });

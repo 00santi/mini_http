@@ -69,7 +69,7 @@ fn handle_404() -> AppResponse {
     }
 }
 
-fn time(req: AppRequest) -> AppResponse {
+fn time(_req: AppRequest) -> AppResponse {
     AppResponse {
         code: StatusCode::OK,
         headers: vec![],

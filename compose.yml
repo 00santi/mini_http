@@ -1,0 +1,17 @@
+services:
+  app:
+    image: rust:1.95
+    working_dir: /app
+    command: cargo run
+    ports:
+      - "7878:7878"
+    volumes:
+      - .:/app
+      - cargo_registry:/usr/local/cargo/registry
+      - cargo_git:/usr/local/cargo/git
+      - target_cache:/app/target
+
+volumes:
+  cargo_registry:
+  cargo_git:
+  target_cache:

@@ -1,60 +1,55 @@
 # Mini Async HTTP Server
 
-## Overview
-- Minimal HTTP server built with **Hyper** and **Tokio**.
-- Includes a small app wrapper that abstracts HTTP requests into framework-agnostic types (Strings, Vecs, enums).
-- Built as a learning project to practice async, HTTP networking, and using third-party libraries.
+A small async HTTP server written in Rust with Hyper and Tokio. It includes a thin app layer that keeps most route logic separate from Hyper's request and response types, plus a translator layer that converts between the two.
 
----
-
-## Dependencies
-* **Tokio** for async
-* **Hyper** for HTTP
-* **Serde** for JSON deserialization
-
----
+I built this as a learning project for async Rust, basic HTTP routing, and containerizing a Rust service with Docker.
 
 ## Endpoints
 
-| Layer         | Method | Path          | Description                      |
-| ------------- | ------ | ------------- | -------------------------------- |
-| Hyper-encoded | GET    | `/` `/health` | Returns `"ok!"`                  |
-| Hyper-encoded | GET    | `/echo`       | Echoes request headers           |
-| Hyper-encoded | POST   | `/echo_body`  | Echoes request body              |
-| App-encoded   | GET    | `/time`       | Returns current system time      |
-| App-encoded   | POST   | `/sum`        | Returns sum from JSON `{ a, b }` |
-| App-encoded   | Any    | invalid path  | Returns `"404!"`                 |
+| Layer | Method | Path | Description |
+| --- | --- | --- | --- |
+| Hyper | GET | `/` `/health` | Returns `ok!` |
+| Hyper | GET | `/echo` | Echoes request headers |
+| Hyper | POST | `/echo_body` | Echoes the request body |
+| App | GET | `/time` | Returns the current system time |
+| App | POST | `/sum` | Returns the sum from JSON like `{ "a": 2, "b": 3 }` |
+| App | Any | invalid path | Returns `404!` |
 
----
-
-## Learning Achievements
-
-* **Decoupled app logic from HTTP:** Created a Hyper-independent app layer for easy endpoint addition and domain modeling, at the cost of performance.
-* **Async reasoning:** Distinguished between synchronous (`GET`) and asynchronous (`POST`) handlers.
-* **Error modeling:** Designed translator errors (`InvalidMethod`, `InvalidHeaders`, `InvalidBody`), while separating domain logic from HTTP-layer concerns.
-* **Evaluated architectured tradeoffs:** Balanced simplicity, performance, and API usability (e.g., optional eager `String` conversion vs async streaming bodies, collapsing errors to a single `404` response for simplicity).
-* **Third-party library integration:** Worked with Hyper, Tokio, and Serde. Explored app-layer patterns similar to those used in higher-level libraries like `Actix` and `Axum`.
-
----
-
-## Tradeoffs / Notes
-
-* **Decoupling vs performance:** App layer simplifies domain logic but introduces extra overhead for body conversion.
-* **Eager string conversion:** Simplifies code but reduces throughput compared to async streaming.
-* **Error handling:** Translator errors are collapsed into 404 responses. But internal error types allow future expansion (`400` / `405`).
-* **Framework-agnostic design:** app module only depends on Rust core types.
----
-
-## How to Run
+## Run Locally
 
 ```bash
 cargo run
 ```
-Server listens on `127.0.0.1:7878`.
 
----
+The server binds to `0.0.0.0:7878`.
 
-## Future Work
+Example request:
 
-* **Unit tests** for translator, hyper endpoints, and app endpoints
-* Mapping specific translator errors to proper HTTP codes
+```bash
+curl -X POST http://127.0.0.1:7878/sum \
+  -H "content-type: application/json" \
+  -d '{"a":2,"b":3}'
+```
+
+## Run With Docker
+
+```bash
+docker build -t mini_http .
+docker run --rm -p 7878:7878 mini_http
+```
+
+The Dockerfile uses a simple multi-stage build: the Rust image compiles the release binary, and the final Debian image runs only that binary.
+
+## Tests
+
+```bash
+cargo test
+```
+
+The tests cover the app router, translator layer, and a couple of end-to-end route paths through the Hyper router.
+
+## Notes
+
+- The app layer is intentionally small and framework-independent from Hyper, which makes route logic easier to test.
+- Request bodies are eagerly converted into strings for simplicity. That is fine for this project, but streaming would be better for large payloads.
+- Translator errors currently collapse into `404` responses. More specific `400` or `405` responses would be a natural next step.

@@ -3,7 +3,7 @@ use serde::Deserialize;
 pub struct AppRequest {
     pub method: Method,
     pub path: String,
-    pub headers: Vec<(String, String)>,
+    pub _headers: Vec<(String, String)>,
     pub body: Option<String>,
 }
 
@@ -25,15 +25,10 @@ pub enum StatusCode {
     NOTFOUND,
 }
 
-
 pub fn router(req: AppRequest) -> AppResponse {
     match req.method {
-        Method::GET => {
-            route_get(req)
-        },
-        Method::POST => {
-            route_post(req)
-        },
+        Method::GET => route_get(req),
+        Method::POST => route_post(req),
         _ => handle_404(),
     }
 }
@@ -73,7 +68,7 @@ fn time(_req: AppRequest) -> AppResponse {
     AppResponse {
         code: StatusCode::OK,
         headers: vec![],
-        body: Some(format!("{:?}", std::time::SystemTime::now()))
+        body: Some(format!("{:?}", std::time::SystemTime::now())),
     }
 }
 
@@ -85,11 +80,11 @@ struct SumInput {
 
 fn sum(req: AppRequest) -> AppResponse {
     let Some(json) = req.body else {
-        return handle_404()
+        return handle_404();
     };
 
     let Ok(parsed): Result<SumInput, _> = serde_json::from_str(&json) else {
-        return handle_404()
+        return handle_404();
     };
 
     AppResponse {
@@ -99,8 +94,6 @@ fn sum(req: AppRequest) -> AppResponse {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -109,7 +102,7 @@ mod tests {
         AppRequest {
             method,
             path: path.to_string(),
-            headers: vec![],
+            _headers: vec![],
             body: body.map(|s| s.to_string()),
         }
     }
@@ -125,11 +118,7 @@ mod tests {
 
     #[test]
     fn sum() {
-        let req = req_helper(
-            Method::POST,
-            "/sum",
-            Some(r#"{"a":5,"b":7}"#),
-        );
+        let req = req_helper(Method::POST, "/sum", Some(r#"{"a":5,"b":7}"#));
 
         let res = router(req);
 

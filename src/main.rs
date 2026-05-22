@@ -1,15 +1,19 @@
-use std::net::SocketAddr;
+use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server};
-use hyper::service::{ make_service_fn, service_fn };
 use std::convert::Infallible;
-mod translator;
+use std::net::SocketAddr;
 mod app;
+mod translator;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!("Start of async server");
     let addr = SocketAddr::from(([0, 0, 0, 0], 7878));
-    println!("Opened a socket.  Ip: {}.  Port: {}", addr.ip(), addr.port());
+    println!(
+        "Opened a socket.  Ip: {}.  Port: {}",
+        addr.ip(),
+        addr.port()
+    );
 
     let make_service = make_service_fn(|_conn| async { Ok::<_, Infallible>(service_fn(router)) });
 
@@ -24,10 +28,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 }
 
 async fn router(req: Request<Body>) -> Result<Response<Body>, Infallible> {
-    match req.method() {
-        &Method::GET => get::handle_get(req),
-        &Method::POST => post::handle_post(req).await,
-        _ => handle_404(req)
+    match *req.method() {
+        Method::GET => get::handle_get(req),
+        Method::POST => post::handle_post(req).await,
+        _ => handle_404(req),
     }
 }
 
@@ -39,12 +43,10 @@ fn health_ok(_: Request<Body>) -> Result<Response<Body>, Infallible> {
     Ok(Response::new(Body::from("ok!\n")))
 }
 
-
-
 mod get {
-    use std::convert::Infallible;
-    use hyper::{Body, Request, Response};
     use super::translator;
+    use hyper::{Body, Request, Response};
+    use std::convert::Infallible;
 
     pub fn handle_get(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         match req.uri().path() {
@@ -76,12 +78,10 @@ mod get {
     }
 }
 
-
-
 mod post {
-    use std::convert::Infallible;
-    use hyper::{Body, Request, Response};
     use super::translator;
+    use hyper::{Body, Request, Response};
+    use std::convert::Infallible;
 
     pub async fn handle_post(req: Request<Body>) -> Result<Response<Body>, Infallible> {
         match req.uri().path() {
@@ -96,12 +96,10 @@ mod post {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hyper::{Request, Body};
+    use hyper::{Body, Request};
 
     #[tokio::test]
     async fn sum() {
@@ -130,6 +128,6 @@ mod tests {
         let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
         let body = String::from_utf8(bytes.to_vec()).unwrap();
 
-        assert_eq!(body, "ok!");
+        assert_eq!(body, "ok!\n");
     }
 }

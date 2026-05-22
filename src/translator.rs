@@ -1,7 +1,7 @@
-use std::convert::Infallible;
-use hyper::{Body, Method, Request, Response};
-use hyper::header::{HeaderName, HeaderValue};
 use crate::app;
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::{Body, Method, Request, Response};
+use std::convert::Infallible;
 
 enum TranslatorError {
     InvalidMethod,
@@ -42,7 +42,7 @@ fn get_req_to_app(req: Request<Body>) -> Result<app::AppRequest, TranslatorError
     Ok(app::AppRequest {
         method: app::Method::GET,
         path: req.uri().path().to_string(),
-        headers,
+        _headers: headers,
         body: None,
     })
 }
@@ -50,10 +50,10 @@ fn get_req_to_app(req: Request<Body>) -> Result<app::AppRequest, TranslatorError
 async fn req_to_app(req: Request<Body>) -> Result<app::AppRequest, TranslatorError> {
     use hyper::body::to_bytes;
 
-    let method = match req.method() {
-        &Method::POST => app::Method::POST,
-        &Method::DELETE => app::Method::DELETE,
-        &Method::PUT => app::Method::PUT,
+    let method = match *req.method() {
+        Method::POST => app::Method::POST,
+        Method::DELETE => app::Method::DELETE,
+        Method::PUT => app::Method::PUT,
         _ => return Err(TranslatorError::InvalidMethod),
     };
 
@@ -75,12 +75,15 @@ async fn req_to_app(req: Request<Body>) -> Result<app::AppRequest, TranslatorErr
             Ok(bytes) => match String::from_utf8(bytes.to_vec()) {
                 Ok(s) => Some(s),
                 Err(_) => return Err(TranslatorError::InvalidBody),
-            }
-        }
+            },
+        },
     };
 
     Ok(app::AppRequest {
-        method, path, headers, body
+        method,
+        path,
+        _headers: headers,
+        body,
     })
 }
 
@@ -97,7 +100,10 @@ fn app_to_res(res: Result<app::AppResponse, TranslatorError>) -> Response<Body> 
     let mut builder = Response::builder().status(code);
 
     for (header, val) in res.headers.drain(..) {
-        if let (Ok(header), Ok(val)) = (HeaderName::from_bytes(header.as_bytes()), HeaderValue::from_str(&val)) {
+        if let (Ok(header), Ok(val)) = (
+            HeaderName::from_bytes(header.as_bytes()),
+            HeaderValue::from_str(&val),
+        ) {
             builder = builder.header(header, val);
         }
     }
@@ -106,12 +112,10 @@ fn app_to_res(res: Result<app::AppResponse, TranslatorError>) -> Response<Body> 
     builder.body(body).unwrap()
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hyper::{Request, Body};
+    use hyper::{Body, Request};
 
     #[tokio::test]
     async fn sum() {
